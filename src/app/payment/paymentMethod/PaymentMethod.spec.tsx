@@ -4,21 +4,25 @@ import { Formik } from 'formik';
 import { noop } from 'lodash';
 import React, { FunctionComponent } from 'react';
 
+import { getBillingAddress } from '../../billing/billingAddresses.mock';
 import { getCart } from '../../cart/carts.mock';
 import { CheckoutProvider } from '../../checkout';
-import { getStoreConfig } from '../../config/config.mock';
+import { getStoreConfig as getDefaultStoreConfig } from '../../config/config.mock';
 import { getCustomer } from '../../customer/customers.mock';
 import { createLocaleContext, LocaleContext, LocaleContextType } from '../../locale';
 import { getPaymentMethod } from '../payment-methods.mock';
 import PaymentContext, { PaymentContextProps } from '../PaymentContext';
 
+import BarclaycardPaymentMethod from './BarclaycardPaymentMethod';
 import CheckoutcomCustomPaymentMethod, { CheckoutcomCustomPaymentMethodProps } from './CheckoutcomCustomPaymentMethod';
 import CreditCardPaymentMethod, { CreditCardPaymentMethodProps } from './CreditCardPaymentMethod';
 import HostedPaymentMethod, { HostedPaymentMethodProps } from './HostedPaymentMethod';
 import OfflinePaymentMethod, { OfflinePaymentMethodProps } from './OfflinePaymentMethod';
+import OpyPaymentMethod from './OpyPaymentMethod';
 import { default as PaymentMethodComponent, PaymentMethodProps } from './PaymentMethod';
 import PaymentMethodId from './PaymentMethodId';
 import PaymentMethodProviderType from './PaymentMethodProviderType';
+import PPSDKPaymentMethod from './PPSDKPaymentMethod';
 
 describe('PaymentMethod', () => {
     let PaymentMethodTest: FunctionComponent<PaymentMethodProps>;
@@ -27,6 +31,7 @@ describe('PaymentMethod', () => {
     let defaultProps: PaymentMethodProps;
     let localeContext: LocaleContextType;
     let paymentContext: PaymentContextProps;
+    const getStoreConfigMock = jest.fn(getDefaultStoreConfig);
 
     beforeEach(() => {
         defaultProps = {
@@ -36,7 +41,7 @@ describe('PaymentMethod', () => {
 
         checkoutService = createCheckoutService();
         checkoutState = checkoutService.getState();
-        localeContext = createLocaleContext(getStoreConfig());
+        localeContext = createLocaleContext(getStoreConfigMock());
         paymentContext = {
             disableSubmit: jest.fn(),
             setSubmit: jest.fn(),
@@ -44,11 +49,14 @@ describe('PaymentMethod', () => {
             hidePaymentSubmitButton: jest.fn(),
         };
 
+        jest.spyOn(checkoutState.data, 'getBillingAddress')
+            .mockReturnValue(getBillingAddress());
+
         jest.spyOn(checkoutState.data, 'getCart')
             .mockReturnValue(getCart());
 
         jest.spyOn(checkoutState.data, 'getConfig')
-            .mockReturnValue(getStoreConfig());
+            .mockReturnValue(getStoreConfigMock());
 
         jest.spyOn(checkoutState.data, 'getCustomer')
             .mockReturnValue(getCustomer());
@@ -403,6 +411,96 @@ describe('PaymentMethod', () => {
                 .toHaveBeenCalledWith(expect.objectContaining({
                     methodId: alternateMethodB.id,
                     gatewayId: alternateMethodB.gateway,
+                }));
+        });
+    });
+
+    describe('when using a PPSDK payment method', () => {
+        let method: PaymentMethod;
+
+        beforeEach(() => {
+            method = {
+                ...getPaymentMethod(),
+                type: 'PAYMENT_TYPE_SDK',
+                initializationStrategy: {
+                    type: 'someInitializationStrategy',
+                },
+            };
+        });
+
+        it('renders as a PPSDK payment method', () => {
+            const container = mount(<PaymentMethodTest { ...defaultProps } method={ method } />);
+
+            expect(container.find(PPSDKPaymentMethod).props())
+                .toEqual(expect.objectContaining({
+                    deinitializePayment: expect.any(Function),
+                    initializePayment: expect.any(Function),
+                    method,
+                }));
+        });
+
+        it('initializes method with required config', () => {
+            const container = mount(<PaymentMethodTest { ...defaultProps } method={ method } />);
+            const component = container.find(PPSDKPaymentMethod);
+
+            component.prop('initializePayment')({
+                methodId: defaultProps.method.id,
+                gatewayId: defaultProps.method.gateway,
+            });
+
+            expect(checkoutService.initializePayment)
+                .toHaveBeenCalledWith(expect.objectContaining({
+                    methodId: method.id,
+                    gatewayId: method.gateway,
+                }));
+        });
+    });
+
+    describe('when using barclaycard payment method', () => {
+        let method: PaymentMethod;
+
+        beforeEach(() => {
+            method = {
+                id: 'barclaycard',
+                method: 'barclaycard',
+                supportedCards: [],
+                config: {},
+                type: 'card',
+                gateway: 'barclaycard',
+            };
+        });
+
+        it('should render barclay PaymentMethod', () => {
+            const container = mount(<PaymentMethodTest { ...defaultProps } method={ method } />);
+
+            expect(container.find(BarclaycardPaymentMethod)).toBeTruthy();
+        });
+    });
+
+    describe('when using Opy payment method', () => {
+        let method: PaymentMethod;
+
+        beforeEach(() => {
+            method = {
+                id: 'opy',
+                method: 'credit-card',
+                supportedCards: ['VISA', 'MC'],
+                config: {
+                    displayName: 'Openpay',
+                    testMode: false,
+                },
+                type: 'PAYMENT_TYPE_API',
+            };
+        });
+
+        it('should render OpyPaymentMethod', () => {
+            const container = mount(<PaymentMethodTest { ...defaultProps } method={ method } />);
+
+            expect(container.find(OpyPaymentMethod).props())
+                .toEqual(expect.objectContaining({
+                    initializePayment: expect.any(Function),
+                    isInitializing: expect.any(Boolean),
+                    method,
                 }));
         });
     });

@@ -15,8 +15,9 @@ describe('GuestForm', () => {
     beforeEach(() => {
         defaultProps = {
             canSubscribe: true,
+            continueAsGuestButtonLabelId: 'customer.continue_as_guest_action',
             defaultShouldSubscribe: false,
-            isContinuingAsGuest: false,
+            isLoading: false,
             onChangeEmail: jest.fn(),
             onContinueAsGuest: jest.fn(),
             onShowLogin: jest.fn(),
@@ -82,6 +83,20 @@ describe('GuestForm', () => {
                 privacyPolicy: false,
                 shouldSubscribe: true,
             });
+    });
+
+    it('disables "continue as guest" button when isLoading is true', () => {
+        const handleContinueAsGuest = jest.fn();
+        const component = mount(
+            <TestComponent
+                isLoading={ true }
+                onContinueAsGuest={ handleContinueAsGuest }
+            />
+        );
+
+        const button = component.find('[data-test="customer-continue-as-guest-button"]');
+
+        expect(button.prop('disabled')).toBeTruthy();
     });
 
     it('displays error message if email is not valid', () => {
@@ -241,5 +256,25 @@ describe('GuestForm', () => {
 
         expect(component.find('[data-test="privacy-policy-field-error-message"]').text())
             .toEqual('Please agree to the Privacy Policy.');
+    });
+
+    it('does not render "sign in" button when loading', () => {
+        const component = mount(
+            <TestComponent
+                isLoading={ true }
+            />
+        );
+
+        expect(component.find('[data-test="customer-continue-button"]').length).toEqual(0);
+    });
+
+    it('shows different action button label if another label id was provided', () => {
+        const component = mount(
+            <TestComponent
+                continueAsGuestButtonLabelId="customer.continue"
+            />
+        );
+
+        expect(component.find('[data-test="customer-continue-button"]').text()).not.toEqual('Continue as guest');
     });
 });

@@ -1,15 +1,23 @@
-import { mount } from 'enzyme';
+import { mount, shallow } from 'enzyme';
 import { noop } from 'lodash';
 import React from 'react';
 import { CSSTransition } from 'react-transition-group';
 
-import { MOBILE_MAX_WIDTH } from '../ui/responsive';
+import { isMobileView, MOBILE_MAX_WIDTH } from '../ui/responsive';
 
 import CheckoutStep, { CheckoutStepProps } from './CheckoutStep';
 import CheckoutStepHeader from './CheckoutStepHeader';
 import CheckoutStepType from './CheckoutStepType';
 
 jest.useFakeTimers();
+jest.mock('../ui/responsive', () => {
+    const original = jest.requireActual('../ui/responsive');
+
+    return {
+        ...original,
+        isMobileView: jest.fn(),
+    };
+});
 
 describe('CheckoutStep', () => {
     let defaultProps: CheckoutStepProps;
@@ -120,9 +128,11 @@ describe('CheckoutStep', () => {
             heading: 'Billing',
             summary: 'Billing summary',
             type: CheckoutStepType.Billing,
+            isActive: true,
             isComplete: true,
             isEditable: true,
-            isActive: true,
+            onEdit: undefined,
+
         };
 
         const component = mount(
@@ -136,7 +146,7 @@ describe('CheckoutStep', () => {
             .toHaveLength(1);
 
         expect(component.find(CheckoutStepHeader).props())
-            .toEqual(headerProps);
+            .toEqual({ ...headerProps });
     });
 
     it('renders content if step is active', () => {
@@ -172,6 +182,8 @@ describe('CheckoutStep', () => {
 
         expect(component.find(CSSTransition))
             .toHaveLength(1);
+        expect(component.find(CSSTransition).prop('enter')).toBe(true);
+        expect(component.find(CSSTransition).prop('exit')).toBe(true);
     });
 
     it('does not animate using CSS transition in mobile view', () => {
@@ -179,7 +191,60 @@ describe('CheckoutStep', () => {
 
         const component = mount(<CheckoutStep { ...defaultProps } />);
 
-        expect(component.find(CSSTransition))
-            .toHaveLength(0);
+        expect(component.find(CSSTransition).prop('enter')).toBe(false);
+        expect(component.find(CSSTransition).prop('exit')).toBe(false);
+    });
+
+    it('changes isClosed for mobile', () => {
+        isMobile = true;
+        isMobileView.mockImplementation(() => isMobile);
+
+        const component = mount(<CheckoutStep { ...defaultProps } />);
+
+        expect(component.state('isClosed')).toBe(false);
+
+        component
+            .setProps({ isActive: false })
+            .update();
+
+        expect(component.state('isClosed')).toBe(true);
+    });
+
+    it('renders suggestion if step is inactive', () => {
+        const component = shallow(
+            <CheckoutStep
+                { ...defaultProps }
+                isActive={ false }
+                suggestion="Billing suggestion"
+            />
+        );
+
+        expect(component.find('[data-test="step-suggestion"]').text())
+            .toEqual('Billing suggestion');
+    });
+
+    it('does not render suggestion if step is active', () => {
+        const component = shallow(
+            <CheckoutStep
+                { ...defaultProps }
+                suggestion="Billing suggestion"
+            />
+        );
+
+        expect(component.exists('[data-test="step-suggestion"]'))
+            .toEqual(false);
+    });
+
+    it('does not render suggestion if its not provided', () => {
+        const component = shallow(
+            <CheckoutStep
+                { ...defaultProps }
+                isActive={ false }
+                suggestion={ undefined }
+            />
+        );
+
+        expect(component.exists('[data-test="step-suggestion"]'))
+            .toEqual(false);
     });
 });

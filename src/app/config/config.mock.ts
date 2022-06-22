@@ -10,6 +10,7 @@ export function getStoreConfig(): StoreConfig {
             billingAddressFields: [],
         },
         checkoutSettings: {
+            checkoutBillingSameAsShippingEnabled: true,
             enableOrderComments: true,
             enableTermsAndConditions: false,
             googleRecaptchaSitekey: 'sitekey',
@@ -27,6 +28,7 @@ export function getStoreConfig(): StoreConfig {
             orderTermsAndConditionsLink: '',
             orderTermsAndConditionsType: '',
             privacyPolicyUrl: '',
+            providerWithCustomCheckout: null,
             shippingQuoteFailedMessage: 'Unfortunately one or more items in your cart can\'t be shipped to your \
             location.Please choose a different delivery address.',
             realtimeShippingProviders: [

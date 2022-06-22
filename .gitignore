@@ -2,3 +2,7 @@ node_modules
 build
 coverage
 dist
+tests/report/
+tests/screenshots/
+src/app/generated/
+__temp__

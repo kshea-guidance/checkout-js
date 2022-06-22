@@ -41,6 +41,7 @@ interface WithCheckoutPaymentProps {
     isTermsConditionsRequired: boolean;
     methods: PaymentMethod[];
     shouldExecuteSpamCheck: boolean;
+    shouldLocaliseErrorMessages: boolean;
     submitOrderError?: Error;
     termsConditionsText?: string;
     termsConditionsUrl?: string;
@@ -104,7 +105,7 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
             onFinalize();
         } catch (error) {
             if (error.type !== 'order_finalization_not_required') {
-                return onFinalizeError(error);
+                onFinalizeError(error);
             }
         }
 
@@ -185,6 +186,7 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
         const {
             finalizeOrderError,
             language,
+            shouldLocaliseErrorMessages,
             submitOrderError,
         } = this.props;
 
@@ -203,7 +205,7 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
         return (
             <ErrorModal
                 error={ error }
-                message={ mapSubmitOrderErrorMessage(error, language.translate.bind(language)) }
+                message={ mapSubmitOrderErrorMessage(error, language.translate.bind(language), shouldLocaliseErrorMessages) }
                 onClose={ this.handleCloseModal }
                 title={ mapSubmitOrderErrorTitle(error, language.translate.bind(language)) }
             />
@@ -268,6 +270,7 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
         });
     };
 
+    // tslint:disable:cyclomatic-complexity
     private handleBeforeUnload: (event: BeforeUnloadEvent) => string | undefined = event => {
         const { defaultMethod, isSubmittingOrder, language } = this.props;
         const { selectedMethod = defaultMethod } = this.state;
@@ -279,16 +282,26 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
         if (!isSubmittingOrder ||
             !selectedMethod ||
             selectedMethod.type === PaymentMethodProviderType.Hosted ||
+            selectedMethod.type === PaymentMethodProviderType.PPSDK ||
             selectedMethod.id === PaymentMethodId.Amazon ||
             selectedMethod.id === PaymentMethodId.AmazonPay ||
+            selectedMethod.id === PaymentMethodId.CBAMPGS ||
             selectedMethod.id === PaymentMethodId.Checkoutcom ||
+            selectedMethod.id === PaymentMethodId.CheckoutcomGooglePay ||
             selectedMethod.id === PaymentMethodId.Converge ||
+            selectedMethod.id === PaymentMethodId.Humm ||
             selectedMethod.id === PaymentMethodId.Laybuy ||
+            selectedMethod.id === PaymentMethodId.Opy ||
+            selectedMethod.id === PaymentMethodId.Quadpay ||
             selectedMethod.id === PaymentMethodId.SagePay ||
             selectedMethod.id === PaymentMethodId.Sezzle ||
+            selectedMethod.id === PaymentMethodId.Zip ||
             selectedMethod.gateway === PaymentMethodId.AdyenV2 ||
             selectedMethod.gateway === PaymentMethodId.AdyenV2GooglePay ||
+            selectedMethod.gateway === PaymentMethodId.AdyenV3 ||
+            selectedMethod.gateway === PaymentMethodId.AdyenV3GooglePay ||
             selectedMethod.gateway === PaymentMethodId.Afterpay ||
+            selectedMethod.gateway === PaymentMethodId.Clearpay ||
             selectedMethod.gateway === PaymentMethodId.Checkoutcom ||
             selectedMethod.gateway === PaymentMethodId.Mollie ||
             selectedMethod.gateway === PaymentMethodId.StripeV3) {
@@ -316,6 +329,10 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
         if (errorType === 'provider_fatal_error' ||
             errorType === 'order_could_not_be_finalized_error') {
             window.location.replace(cartUrl || '/');
+        }
+
+        if (errorType === 'tax_provider_unavailable') {
+            window.location.reload();
         }
 
         if (isRequestError(error)) {
@@ -480,6 +497,7 @@ export function mapToPaymentProps({
 
     const {
         enableTermsAndConditions: isTermsConditionsEnabled,
+        features,
         orderTermsAndConditionsType: termsConditionsType,
         orderTermsAndConditions: termsCondtitionsText,
         orderTermsAndConditionsLink: termsCondtitionsUrl,
@@ -537,6 +555,7 @@ export function mapToPaymentProps({
         loadPaymentMethods: checkoutService.loadPaymentMethods,
         methods: filteredMethods,
         shouldExecuteSpamCheck: checkout.shouldExecuteSpamCheck,
+        shouldLocaliseErrorMessages: features['PAYMENTS-6799.localise_checkout_payment_error_messages'],
         submitOrder: checkoutService.submitOrder,
         submitOrderError: getSubmitOrderError(),
         termsConditionsText: isTermsConditionsRequired && termsConditionsType === TermsConditionsType.TextArea ?

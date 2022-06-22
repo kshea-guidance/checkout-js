@@ -1,12 +1,15 @@
+import { noop } from 'lodash';
 import React, { useCallback, useContext, FunctionComponent } from 'react';
 import { Omit } from 'utility-types';
 
+import { CustomError } from '../../common/error';
 import { connectFormik, ConnectFormikProps } from '../../common/form';
+import { withLanguage, WithLanguageProps } from '../../locale';
 import { FormContext } from '../../ui/form';
-import PaymentContext from '../PaymentContext';
 import { PaymentFormValues } from '../PaymentForm';
 
-import HostedWidgetPaymentMethod, { HostedWidgetPaymentMethodProps } from './HostedWidgetPaymentMethod';
+import HostedDropInPaymentMethod from './HostedDropInPaymentMethod';
+import { HostedWidgetPaymentMethodProps } from './HostedWidgetPaymentMethod';
 
 export type DigitalRiverPaymentMethodProps = Omit<HostedWidgetPaymentMethodProps, 'containerId'> & ConnectFormikProps<PaymentFormValues>;
 
@@ -14,56 +17,64 @@ export enum DigitalRiverClasses {
     base =  'form-input optimizedCheckout-form-input',
 }
 
-const DigitalRiverPaymentMethod: FunctionComponent<DigitalRiverPaymentMethodProps> = ({
+const DigitalRiverPaymentMethod: FunctionComponent<DigitalRiverPaymentMethodProps & WithLanguageProps> = ({
     initializePayment,
-    onUnhandledError,
+    language,
+    onUnhandledError = noop,
     formik: { submitForm },
     ...rest
 }) => {
-    const paymentContext = useContext(PaymentContext);
     const { setSubmitted } = useContext(FormContext);
-    const containerId = `${rest.method}-component-field`;
+    const containerId = `${rest.method.id}-component-field`;
+    const isVaultingEnabled = rest.method.config.isVaultingEnabled;
+
     const initializeDigitalRiverPayment = useCallback(options => initializePayment({
         ...options,
         digitalriver: {
             containerId,
             configuration: {
                 flow: 'checkout',
-                showSavePaymentAgreement: false,
-                showComplianceSection: true,
+                showSavePaymentAgreement: isVaultingEnabled,
+                showComplianceSection: false,
                 button: {
                     type: 'submitOrder',
                 },
                 usage: 'unscheduled',
                 showTermsOfSaleDisclosure: true,
                 paymentMethodConfiguration: {
-                    disabledPaymentMethods: [
-                        'klarnaCredit',
-                        'payPal',
-                        'payPalCredit',
-                        'payPalBilling',
-                    ],
                     classes: DigitalRiverClasses,
                 },
-            },
-            onRenderButton: () => {
-                paymentContext?.hidePaymentSubmitButton?.(rest.method, true);
             },
             onSubmitForm: () => {
                 setSubmitted(true);
                 submitForm();
             },
-            onError: (error: Error) => {
-                onUnhandledError?.(error);
+            onError: () => {
+                onUnhandledError?.(new Error(language.translate('payment.digitalriver_dropin_error')));
             },
         },
-    }), [containerId, initializePayment, submitForm, paymentContext, rest.method, setSubmitted, onUnhandledError]);
+    }), [initializePayment, containerId, isVaultingEnabled, setSubmitted, submitForm, onUnhandledError, language]);
 
-    return <HostedWidgetPaymentMethod
+    const onError = (error: CustomError) => {
+        if (error.name === 'digitalRiverCheckoutError') {
+            error = new CustomError({
+                title: language.translate('payment.digitalriver_checkout_error_title'),
+                message: language.translate(error.type),
+                data: {},
+                name: 'digitalRiverCheckoutError',
+            });
+        }
+
+        onUnhandledError?.(error);
+    };
+
+    return <HostedDropInPaymentMethod
         { ...rest }
         containerId={ containerId }
+        hideVerificationFields
         initializePayment={ initializeDigitalRiverPayment }
+        onUnhandledError={ onError }
     />;
 };
 
-export default connectFormik(DigitalRiverPaymentMethod);
+export default connectFormik(withLanguage(DigitalRiverPaymentMethod));

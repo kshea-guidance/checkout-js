@@ -31,6 +31,7 @@ describe('Shipping Component', () => {
         checkoutState = checkoutService.getState();
 
         defaultProps = {
+            isBillingSameAsShipping: true,
             isMultiShippingMode: false,
             onToggleMultiShipping: jest.fn(),
             cartHasChanged: false,
@@ -260,7 +261,7 @@ describe('Shipping Component', () => {
         expect(checkoutService.deleteConsignment).toHaveBeenCalled();
     });
 
-    it('does not Call delete consignment if consignment doesnot exist when adding a new address', async () => {
+    it('does not call delete consignment if consignment doesnot exist when adding a new address', async () => {
         jest.spyOn(checkoutState.data, 'getCustomer').mockReturnValue({
             ...getCustomer(),
         });
@@ -315,6 +316,26 @@ describe('Shipping Component', () => {
 
             it('renders shipping form', () => {
                 expect(component.find(ShippingForm).length).toEqual(1);
+            });
+
+            it('updates shipping if shopper turns off multishipping mode with multiple consignments', async () => {
+                const consignments = [
+                    { ...getConsignment(), id: 'foo' },
+                    { ...getConsignment(), id: 'bar' },
+                    { ...getConsignment(), id: 'foobar' },
+                ];
+                const multipleConsignmentsProp = {
+                    ...defaultProps,
+                    consignments,
+                };
+
+                component = mount(<ComponentTest { ...multipleConsignmentsProp } isMultiShippingMode={ true } />);
+                await new Promise(resolve => process.nextTick(resolve));
+                component.update();
+
+                component.find('[data-test="shipping-mode-toggle"]').simulate('click');
+
+                expect(checkoutService.updateShippingAddress).toHaveBeenCalledWith(consignments[0].shippingAddress);
             });
         });
 

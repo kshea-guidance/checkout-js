@@ -6,6 +6,8 @@
     height: fontSize("large");
 
     + .paymentProviderHeader-name {
+        font-size: 18px;
+        font-weight: bold;
         margin-left: spacing("half");
     }
 }
@@ -83,4 +85,37 @@ body.klarna-payments-fso-open {
 .submitButtonContainer {
     margin-left: 0;
     width: 100%;
+}
+
+.checkoutcom-sepa-column-container {
+    display: flex;
+    flex: 1;
+    flex-basis: 100%;
+    flex-direction: row;
+    margin-bottom: 0;
+    padding-bottom: remCalc(5px);
+}
+
+.checkoutcom-sepa-column-content {
+    width: 50%;
+}
+
+.checkoutcom-sepa-title {
+    margin-bottom: 0;
+    padding-bottom: remCalc(5px);
+}
+
+.checkoutcom-sepa-line {
+    margin-bottom: 0;
+}
+
+/* Custom payment submit buttons styles */
+.payment-submit-button-bolt {
+    font-size: 16px;
+}
+
+.payment-submit-button-bolt-icon {
+    height: remCalc(12px);
+    margin-right: remCalc(8px);
+    width: remCalc(12px);
 }

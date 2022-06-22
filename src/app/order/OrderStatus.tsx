@@ -1,5 +1,5 @@
-import { Order } from '@bigcommerce/checkout-sdk';
-import React, { memo, useCallback, FunctionComponent } from 'react';
+import { GatewayOrderPayment, GiftCertificateOrderPayment, Order } from '@bigcommerce/checkout-sdk';
+import React, { memo, FunctionComponent } from 'react';
 
 import { TranslatedHtml, TranslatedString } from '../locale';
 
@@ -11,15 +11,18 @@ export interface OrderStatusProps {
     order: Order;
 }
 
+type PaymentWithMandate = GatewayOrderPayment & Required<Pick<GatewayOrderPayment, 'mandate' | 'methodId'>>;
+
+const isPaymentWithMandate = (payment: GatewayOrderPayment | GiftCertificateOrderPayment): payment is PaymentWithMandate =>
+    !!payment.methodId && ('mandate' in payment && !!payment.mandate);
+
 const OrderStatus: FunctionComponent<OrderStatusProps> = ({
     order,
     supportEmail,
     supportPhoneNumber,
 }) => {
 
-    const getMandateProvider = useCallback(() => {
-        return order?.payments?.[0].description === 'Stripe (SEPA)' ? 'SEPA Direct Debit' : order?.payments?.[0].description;
-    }, [order]);
+    const paymentsWithMandates = order.payments?.filter(isPaymentWithMandate) || [];
 
     return <OrderConfirmationSection>
         { order.orderId &&
@@ -38,13 +41,24 @@ const OrderStatus: FunctionComponent<OrderStatusProps> = ({
                 supportPhoneNumber={ supportPhoneNumber }
             />
         </p>
+        {
+            paymentsWithMandates.map(payment => {
+                if (payment.mandate.url) {
+                        return <a data-test="order-confirmation-mandate-link-text" href={ payment.mandate.url } key={ `${payment.providerId}-${payment.methodId}-mandate` } rel="noopener noreferrer" target="_blank">
+                            <TranslatedString
+                                id={ `order_confirmation.mandate.${payment.providerId}.${payment.methodId}` }
+                            />
+                        </a>;
+                }
 
-        { order.mandateUrl && <a data-test="order-confirmation-mandate-link-text" href={ order.mandateUrl } rel="noopener noreferrer" target="_blank">
-                <TranslatedString
-                    data={ { provider : getMandateProvider() } }
-                    id="order_confirmation.mandate_link_text"
-                />
-        </a> }
+                return <p data-test="order-confirmation-mandate-id-text" key={ `${payment.providerId}-${payment.methodId}-mandate` }>
+                    <TranslatedString
+                        data={ { mandate : payment.mandate.id } }
+                        id={ `order_confirmation.mandate.${payment.providerId}.${payment.methodId}` }
+                    />
+                </p> ;
+            })
+        }
 
         { order.hasDigitalItems &&
         <p data-test="order-confirmation-digital-items-text">
@@ -73,18 +87,18 @@ const OrderStatusMessage: FunctionComponent<OrderStatusMessageProps> = ({
     switch (orderStatus) {
     case 'MANUAL_VERIFICATION_REQUIRED':
     case 'AWAITING_PAYMENT':
-        return <TranslatedString
+        return <TranslatedHtml
             id="order_confirmation.order_pending_review_text"
         />;
 
     case 'PENDING':
-        return <TranslatedString
+        return <TranslatedHtml
             data={ { orderNumber, supportEmail } }
             id="order_confirmation.order_pending_status_text"
         />;
 
     case 'INCOMPLETE':
-        return <TranslatedString
+        return <TranslatedHtml
             data={ { orderNumber, supportEmail } }
             id="order_confirmation.order_incomplete_status_text"
         />;

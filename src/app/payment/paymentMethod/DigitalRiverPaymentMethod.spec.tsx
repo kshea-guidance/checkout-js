@@ -9,7 +9,7 @@ import { getStoreConfig } from '../../config/config.mock';
 import { createLocaleContext, LocaleContext, LocaleContextType } from '../../locale';
 import { getPaymentMethod } from '../payment-methods.mock';
 
-import HostedWidgetPaymentMethod, { HostedWidgetPaymentMethodProps } from './HostedWidgetPaymentMethod';
+import HostedDropInPaymentMethod, { HostedDropInPaymentMethodProps } from './HostedDropInPaymentMethod';
 import { default as PaymentMethodComponent, PaymentMethodProps } from './PaymentMethod';
 import PaymentMethodId from './PaymentMethodId';
 
@@ -20,16 +20,18 @@ describe('when using Digital River payment', () => {
     let defaultProps: PaymentMethodProps;
     let localeContext: LocaleContextType;
     let PaymentMethodTest: FunctionComponent<PaymentMethodProps>;
+    const digitalRiverMethod = getPaymentMethod();
+    digitalRiverMethod.config.isVaultingEnabled = true;
 
     beforeEach(() => {
         defaultProps = {
-            method: getPaymentMethod(),
+            method: digitalRiverMethod,
             onUnhandledError: jest.fn(),
         };
         checkoutService = createCheckoutService();
         checkoutState = checkoutService.getState();
         localeContext = createLocaleContext(getStoreConfig());
-        method = { ...getPaymentMethod(), id: PaymentMethodId.DigitalRiver };
+        method = { ...digitalRiverMethod, id: PaymentMethodId.DigitalRiver };
 
         jest.spyOn(checkoutState.data, 'getConfig')
             .mockReturnValue(getStoreConfig());
@@ -54,21 +56,22 @@ describe('when using Digital River payment', () => {
         );
     });
 
-    it('renders as hosted widget method', () => {
+    it('renders as hosted drop in method', () => {
         const container = mount(<PaymentMethodTest { ...defaultProps } method={ method } />);
-        const component: ReactWrapper<HostedWidgetPaymentMethodProps> = container.find(HostedWidgetPaymentMethod);
+        const component: ReactWrapper<HostedDropInPaymentMethodProps> = container.find(HostedDropInPaymentMethod);
 
         expect(component.props())
             .toEqual(expect.objectContaining({
-                containerId: `${method}-component-field`,
+                containerId: `${method.id}-component-field`,
                 initializePayment: expect.any(Function),
                 method,
+                onUnhandledError: expect.any(Function),
             }));
     });
 
-    it('initializes method with required config', () => {
+    it('initializes method with required config including initializationData', () => {
         const container = mount(<PaymentMethodTest { ...defaultProps } method={ method } />);
-        const component: ReactWrapper<HostedWidgetPaymentMethodProps> = container.find(HostedWidgetPaymentMethod);
+        const component: ReactWrapper<HostedDropInPaymentMethodProps> = container.find(HostedDropInPaymentMethod);
 
         component.prop('initializePayment')({
             methodId: method.id,
@@ -84,24 +87,53 @@ describe('when using Digital River payment', () => {
                         },
                         flow: 'checkout',
                         paymentMethodConfiguration: {
-                            disabledPaymentMethods: [
-                                'klarnaCredit',
-                                'payPal',
-                                'payPalCredit',
-                                'payPalBilling',
-                            ],
                             classes: {
                                 base: 'form-input optimizedCheckout-form-input',
                             },
                         },
-                        showComplianceSection: true,
-                        showSavePaymentAgreement: false,
+                        showComplianceSection: false,
+                        showSavePaymentAgreement: true,
                         showTermsOfSaleDisclosure: true,
                         usage: 'unscheduled',
                     },
-                    containerId: `${method}-component-field`,
+                    containerId: `${method.id}-component-field`,
                     onError: expect.any(Function),
-                    onRenderButton: expect.any(Function),
+                    onSubmitForm: expect.any(Function),
+                },
+                gatewayId: undefined,
+                methodId: 'digitalriver',
+            });
+    });
+
+    it('initializes method with required config and without initializationData', () => {
+        const container = mount(<PaymentMethodTest { ...defaultProps } method={ method } />);
+        const component: ReactWrapper<HostedDropInPaymentMethodProps> = container.find(HostedDropInPaymentMethod);
+
+        component.prop('initializePayment')({
+            methodId: method.id,
+            gatewayId: method.gateway,
+        });
+
+        expect(checkoutService.initializePayment)
+            .toHaveBeenCalledWith({
+                digitalriver: {
+                    configuration: {
+                        button: {
+                            type: 'submitOrder',
+                        },
+                        flow: 'checkout',
+                        paymentMethodConfiguration: {
+                            classes: {
+                                base: 'form-input optimizedCheckout-form-input',
+                            },
+                        },
+                        showComplianceSection: false,
+                        showSavePaymentAgreement: true,
+                        showTermsOfSaleDisclosure: true,
+                        usage: 'unscheduled',
+                    },
+                    containerId: `${method.id}-component-field`,
+                    onError: expect.any(Function),
                     onSubmitForm: expect.any(Function),
                 },
                 gatewayId: undefined,

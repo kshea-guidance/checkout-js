@@ -1,8 +1,9 @@
-import React, { memo, FunctionComponent } from 'react';
+import React, { memo, Fragment, FunctionComponent } from 'react';
 
 import { withCheckout } from '../checkout';
 import { TranslatedString } from '../locale';
 import { Button, ButtonSize, ButtonVariant } from '../ui/button';
+import { IconBolt } from '../ui/icon';
 
 import { PaymentMethodId, PaymentMethodType } from './paymentMethod';
 
@@ -10,9 +11,19 @@ interface PaymentSubmitButtonTextProps {
     methodGateway?: string;
     methodId?: string;
     methodType?: string;
+    methodName?: string;
+    initialisationStrategyType?: string;
+    brandName?: string;
 }
 
-const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> = memo(({ methodId, methodType, methodGateway }) => {
+const providersWithCustomClasses = [PaymentMethodId.Bolt];
+
+const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> = memo(({ methodId, methodName, methodType, methodGateway, initialisationStrategyType, brandName }) => {
+
+    if (methodName && initialisationStrategyType === 'none') {
+        return <TranslatedString data={ { methodName } } id="payment.ppsdk_continue_action" />;
+    }
+
     if (methodId === PaymentMethodId.Amazon) {
         return <TranslatedString id="payment.amazon_continue_action" />;
     }
@@ -22,7 +33,10 @@ const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> =
     }
 
     if (methodId === PaymentMethodId.Bolt) {
-        return <TranslatedString id="payment.bolt_continue_action" />;
+        return (<Fragment>
+            <IconBolt additionalClassName="payment-submit-button-bolt-icon" />
+            <TranslatedString id="payment.place_order_action" />
+        </Fragment>);
     }
 
     if (methodGateway === PaymentMethodId.Barclaycard) {
@@ -42,11 +56,36 @@ const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> =
     }
 
     if (methodType === PaymentMethodType.Paypal) {
-        return <TranslatedString id="payment.paypal_continue_action" />;
+        // TODO: method.id === PaymentMethodId.BraintreeVenmo should be removed after the PAYPAL-1380.checkout_button_strategies_update experiment removal
+        return <TranslatedString id={ methodId === PaymentMethodId.BraintreeVenmo ? 'payment.braintreevenmo_continue_action' : 'payment.paypal_continue_action' } />;
+    }
+
+    if (methodId === PaymentMethodId.BraintreeVenmo) {
+        return <TranslatedString id="payment.braintreevenmo_continue_action" />;
     }
 
     if (methodType === PaymentMethodType.PaypalCredit) {
-        return <TranslatedString id="payment.paypal_credit_continue_action" />;
+        return <TranslatedString data={ { brandName } } id={ brandName ? 'payment.continue_with_brand' : 'payment.paypal_pay_later_continue_action' } />;
+    }
+
+    if (methodType === PaymentMethodType.PaypalVenmo) {
+        return <TranslatedString id="payment.paypal_venmo_continue_action" />;
+    }
+
+    if (methodId === PaymentMethodId.Opy) {
+        return <TranslatedString data={ { methodName } } id="payment.opy_continue_action" />;
+    }
+
+    if (methodId === PaymentMethodId.Quadpay) {
+        return <TranslatedString id="payment.quadpay_continue_action" />;
+    }
+
+    if (methodId === PaymentMethodId.Zip) {
+        return <TranslatedString id="payment.zip_continue_action" />;
+    }
+
+    if (methodId === PaymentMethodId.Klarna) {
+        return <TranslatedString id="payment.klarna_continue_action" />;
     }
 
     return <TranslatedString id="payment.place_order_action" />;
@@ -55,8 +94,11 @@ const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> =
 export interface PaymentSubmitButtonProps {
     methodGateway?: string;
     methodId?: string;
+    methodName?: string;
     methodType?: string;
     isDisabled?: boolean;
+    initialisationStrategyType?: string;
+    brandName?: string;
 }
 
 interface WithCheckoutPaymentSubmitButtonProps {
@@ -70,9 +112,13 @@ const PaymentSubmitButton: FunctionComponent<PaymentSubmitButtonProps & WithChec
     isSubmitting,
     methodGateway,
     methodId,
+    methodName,
     methodType,
+    initialisationStrategyType,
+    brandName,
 }) => (
         <Button
+            className={ providersWithCustomClasses.includes(methodId as PaymentMethodId) ? `payment-submit-button-${methodId}` : undefined }
             disabled={ isInitializing || isSubmitting || isDisabled }
             id="checkout-payment-continue"
             isFullWidth
@@ -82,8 +128,11 @@ const PaymentSubmitButton: FunctionComponent<PaymentSubmitButtonProps & WithChec
             variant={ ButtonVariant.Action }
         >
             <PaymentSubmitButtonText
+                brandName={ brandName }
+                initialisationStrategyType={ initialisationStrategyType }
                 methodGateway={ methodGateway }
                 methodId={ methodId }
+                methodName={ methodName }
                 methodType={ methodType }
             />
         </Button>
