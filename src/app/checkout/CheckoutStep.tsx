@@ -13,13 +13,22 @@ export interface CheckoutStepProps {
     isActive?: boolean;
     isComplete?: boolean;
     isEditable?: boolean;
+    suggestion?: ReactNode;
     summary?: ReactNode;
     type: CheckoutStepType;
     onExpanded?(step: CheckoutStepType): void;
     onEdit?(step: CheckoutStepType): void;
 }
 
-export default class CheckoutStep extends Component<CheckoutStepProps> {
+export interface CheckoutStepState {
+    isClosed: boolean;
+}
+
+export default class CheckoutStep extends Component<CheckoutStepProps, CheckoutStepState> {
+    state = {
+        isClosed: true,
+    };
+
     private containerRef = createRef<HTMLLIElement>();
     private contentRef = createRef<HTMLDivElement>();
     private timeoutRef?: number;
@@ -35,9 +44,14 @@ export default class CheckoutStep extends Component<CheckoutStepProps> {
 
     componentDidUpdate(prevProps: Readonly<CheckoutStepProps>): void {
         const { isActive } = this.props;
+        const { isClosed } = this.state;
 
         if (isActive && isActive !== prevProps.isActive) {
             this.focusStep();
+        }
+
+        if (!isActive && !isClosed && isMobileView()) {
+            this.setState({ isClosed: true });
         }
     }
 
@@ -56,9 +70,12 @@ export default class CheckoutStep extends Component<CheckoutStepProps> {
             isComplete,
             isEditable,
             onEdit,
+            suggestion,
             summary,
             type,
         } = this.props;
+
+        const { isClosed } = this.state;
 
         return (
             <li
@@ -81,6 +98,10 @@ export default class CheckoutStep extends Component<CheckoutStepProps> {
                     />
                 </div>
 
+                { suggestion && isClosed && !isActive && <div className="checkout-suggestion" data-test="step-suggestion">
+                    { suggestion }
+                </div> }
+
                 { this.renderContent() }
             </li>
         );
@@ -91,16 +112,12 @@ export default class CheckoutStep extends Component<CheckoutStepProps> {
 
         return <>
             <MobileView>
-                { matched => {
-                    if (matched) {
-                        return !isActive ? null : <div className="checkout-view-content">
-                            { children }
-                        </div>;
-                    }
-
-                    return <CSSTransition
+                { matched =>
+                    <CSSTransition
                         addEndListener={ this.handleTransitionEnd }
                         classNames="checkout-view-content"
+                        enter={ !matched }
+                        exit={ !matched }
                         in={ isActive }
                         mountOnEnter
                         timeout={ {} }
@@ -112,14 +129,15 @@ export default class CheckoutStep extends Component<CheckoutStepProps> {
                         >
                             { children }
                         </div>
-                    </CSSTransition>;
-                } }
+                    </CSSTransition> }
             </MobileView>
         </>;
     }
 
     private focusStep(): void {
         const delay = isMobileView() ? 0 : this.getTransitionDelay();
+
+        this.setState({ isClosed: false });
 
         this.timeoutRef = window.setTimeout(() => {
             const input = this.getChildInput();
@@ -195,9 +213,15 @@ export default class CheckoutStep extends Component<CheckoutStepProps> {
     }
 
     private handleTransitionEnd: (node: HTMLElement, done: () => void) => void = (node, done) => {
+        const { isActive } = this.props;
+
         node.addEventListener('transitionend', ({ target }) => {
             if (target === node) {
                 done();
+
+                if (!isActive) {
+                    this.setState({ isClosed: true });
+                }
             }
         });
     };

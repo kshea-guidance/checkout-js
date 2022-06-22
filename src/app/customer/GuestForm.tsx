@@ -13,10 +13,11 @@ import SubscribeField from './SubscribeField';
 export interface GuestFormProps {
     canSubscribe: boolean;
     checkoutButtons?: ReactNode;
+    continueAsGuestButtonLabelId: string;
     requiresMarketingConsent: boolean;
     defaultShouldSubscribe: boolean;
     email?: string;
-    isContinuingAsGuest: boolean;
+    isLoading: boolean;
     privacyPolicyUrl?: string;
     onChangeEmail(email: string): void;
     onContinueAsGuest(data: GuestFormValues): void;
@@ -31,7 +32,8 @@ export interface GuestFormValues {
 const GuestForm: FunctionComponent<GuestFormProps & WithLanguageProps & FormikProps<GuestFormValues>> = ({
     canSubscribe,
     checkoutButtons,
-    isContinuingAsGuest,
+    continueAsGuestButtonLabelId,
+    isLoading,
     onChangeEmail,
     onShowLogin,
     privacyPolicyUrl,
@@ -81,27 +83,29 @@ const GuestForm: FunctionComponent<GuestFormProps & WithLanguageProps & FormikPr
                         <Button
                             className="customerEmail-button"
                             id="checkout-customer-continue"
-                            isLoading={ isContinuingAsGuest }
+                            isLoading={ isLoading }
                             testId="customer-continue-as-guest-button"
                             type="submit"
                             variant={ ButtonVariant.Primary }
                         >
-                            <TranslatedString id="customer.continue_as_guest_action" />
+                            <TranslatedString id={ continueAsGuestButtonLabelId } />
                         </Button>
                     </div>
                 </div>
 
-                <p>
-                    <TranslatedString id="customer.login_text" />
-                    { ' ' }
-                    <a
-                        data-test="customer-continue-button"
-                        id="checkout-customer-login"
-                        onClick={ onShowLogin }
-                    >
-                        <TranslatedString id="customer.login_action" />
-                    </a>
-                </p>
+                {
+                    !isLoading && <p>
+                        <TranslatedString id="customer.login_text" />
+                        { ' ' }
+                        <a
+                            data-test="customer-continue-button"
+                            id="checkout-customer-login"
+                            onClick={ onShowLogin }
+                        >
+                            <TranslatedString id="customer.login_action" />
+                        </a>
+                    </p>
+                }
 
                 { checkoutButtons }
             </Fieldset>

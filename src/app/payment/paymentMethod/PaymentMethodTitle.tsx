@@ -9,6 +9,7 @@ import { withLanguage, WithLanguageProps } from '../../locale';
 import { mapFromPaymentMethodCardType, CreditCardIconList } from '../creditCard';
 import { PaymentFormValues } from '../PaymentForm';
 
+import getPaymentMethodDisplayName from './getPaymentMethodDisplayName';
 import getPaymentMethodName from './getPaymentMethodName';
 import PaymentMethodId from './PaymentMethodId';
 import PaymentMethodType from './PaymentMethodType';
@@ -30,6 +31,7 @@ function getPaymentMethodTitle(
 
     return method => {
         const methodName = getPaymentMethodName(language)(method);
+        const methodDisplayName = getPaymentMethodDisplayName(language)(method);
         // TODO: API could provide the data below so UI can read simply read it.
         // However, I'm not sure how we deal with translation yet. TBC.
         const customTitles: { [key: string]: { logoUrl: string; titleText: string } } = {
@@ -37,25 +39,29 @@ function getPaymentMethodTitle(
                 logoUrl: '',
                 titleText: methodName,
             },
+            [PaymentMethodId.BraintreeVenmo]: {
+                logoUrl: method.logoUrl || '',
+                titleText: method.logoUrl ? '' : methodDisplayName,
+            },
             [PaymentMethodType.PaypalCredit]: {
-                logoUrl: cdnPath('/img/payment-providers/paypal-credit.png'),
-                titleText: '',
+                logoUrl: cdnPath('/img/payment-providers/paypal_commerce_logo_letter.svg'),
+                titleText: methodDisplayName,
             },
             [PaymentMethodId.PaypalCommerce]: {
                 logoUrl: cdnPath('/img/payment-providers/paypal_commerce_logo.svg'),
                 titleText: '',
             },
             [PaymentMethodId.PaypalCommerceCredit]: {
-                logoUrl: cdnPath('/img/payment-providers/paypal_commerce_pay_later.svg'),
-                titleText: '',
+                logoUrl: cdnPath('/img/payment-providers/paypal_commerce_logo_letter.svg'),
+                titleText: methodDisplayName,
             },
             [PaymentMethodId.PaypalCommerceAlternativeMethod]: {
                 logoUrl: method.logoUrl || '',
-                titleText: (method.logoUrl ? '' : method.config.displayName) || '',
+                titleText: method.logoUrl ? '' : methodDisplayName,
             },
             [PaymentMethodType.VisaCheckout]: {
                 logoUrl: cdnPath('/img/payment-providers/visa-checkout.png'),
-                titleText: '',
+                titleText: methodName,
             },
             [PaymentMethodId.Affirm]: {
                 logoUrl: cdnPath('/img/payment-providers/affirm-checkout-header.png'),
@@ -73,21 +79,37 @@ function getPaymentMethodTitle(
                 logoUrl: cdnPath('/img/payment-providers/amazon-header.png'),
                 titleText: '',
             },
+            [PaymentMethodId.ApplePay]: {
+                logoUrl: cdnPath('/modules/checkout/applepay/images/applepay-header@2x.png'),
+                titleText: '',
+            },
+            [PaymentMethodId.Bolt]: {
+                logoUrl: '',
+                titleText: methodDisplayName,
+            },
             [PaymentMethodId.ChasePay]: {
                 logoUrl: cdnPath('/img/payment-providers/chase-pay.png'),
                 titleText: '',
+            },
+            [PaymentMethodId.Clearpay]: {
+                logoUrl: cdnPath('/img/payment-providers/clearpay-header.png'),
+                titleText: methodName,
             },
             [PaymentMethodType.GooglePay]: {
                 logoUrl: cdnPath('/img/payment-providers/google-pay.png'),
                 titleText: '',
             },
             [PaymentMethodId.DigitalRiver]: {
-                logoUrl: cdnPath('/img/payment-providers/digital-river-header.png'),
+                logoUrl: '',
+                titleText: language.translate('payment.digitalriver_display_name_text'),
+            },
+            [PaymentMethodId.Humm]: {
+                logoUrl: cdnPath('/img/payment-providers/humm-checkout-header.png'),
                 titleText: '',
             },
             [PaymentMethodId.Klarna]: {
                 logoUrl: cdnPath('/img/payment-providers/klarna-header.png'),
-                titleText: method.config && method.config.displayName || '',
+                titleText: methodDisplayName,
             },
             [PaymentMethodId.Laybuy]: {
                 logoUrl: cdnPath('/img/payment-providers/laybuy-checkout-header.png'),
@@ -97,9 +119,18 @@ function getPaymentMethodTitle(
                 logoUrl: 'https://masterpass.com/dyn/img/acc/global/mp_mark_hor_blk.svg',
                 titleText: '',
             },
-            [PaymentMethodType.Paypal]: {
-                logoUrl: cdnPath('/img/payment-providers/paypalpaymentsprouk.png'),
+            [PaymentMethodId.Opy]: {
+                logoUrl: cdnPath(`/img/payment-providers/${method.config.logo ?? 'opy_default.svg'}`),
                 titleText: '',
+            },
+            [PaymentMethodType.Paypal]: {
+                // TODO: method.id === PaymentMethodId.BraintreeVenmo should be removed after the PAYPAL-1380.checkout_button_strategies_update experiment removal
+                logoUrl: (method.id === PaymentMethodId.BraintreeVenmo && method.logoUrl) ? method.logoUrl : cdnPath('/img/payment-providers/paypalpaymentsprouk.png'),
+                titleText: '',
+            },
+            [PaymentMethodId.Quadpay]: {
+                logoUrl: cdnPath('/img/payment-providers/quadpay.png'),
+                titleText: language.translate('payment.quadpay_display_name_text'),
             },
             [PaymentMethodId.Sezzle]: {
                 logoUrl: cdnPath('/img/payment-providers/sezzle-checkout-header.png'),
@@ -115,21 +146,37 @@ function getPaymentMethodTitle(
             },
             [PaymentMethodId.AdyenV2]: {
                 logoUrl: `https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/${(method.method === 'scheme') ? 'card' : method.method}.svg`,
-                titleText: (method.config.displayName === 'Credit Card' ? language.translate('payment.adyen_credit_debit_card_text') : method.config.displayName) || '',
+                titleText: methodDisplayName,
+            },
+            [PaymentMethodId.AdyenV3]: {
+                logoUrl: `https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/${(method.method === 'scheme') ? 'card' : method.method}.svg`,
+                titleText: methodDisplayName,
             },
             [PaymentMethodId.Mollie]: {
-                logoUrl: method.method === 'creditcard' ? '' : cdnPath(`/img/payment-providers/${method.method}.svg`),
+                logoUrl: method.method === 'credit_card' ? '' : cdnPath(`/img/payment-providers/mollie_${method.method}.svg`),
                 titleText: methodName,
             },
             [PaymentMethodId.Checkoutcom]: {
-                logoUrl: method.id === 'credit_card' ? '' : cdnPath(`/img/payment-providers/checkoutcom_${method.id.toLowerCase()}.png`),
-                titleText: method.id === 'credit_card' ? methodName : '',
+                logoUrl: ['credit_card', 'card', 'checkoutcom'].includes(method.id) ? '' : cdnPath(`/img/payment-providers/checkoutcom_${method.id.toLowerCase()}.svg`),
+                titleText: methodName,
             },
             [PaymentMethodId.StripeV3]: {
                 logoUrl: '',
                 titleText: method.method === 'iban' ? language.translate('payment.stripe_sepa_display_name_text') : methodName,
             },
+            [PaymentMethodId.StripeUPE]: {
+                logoUrl: '',
+                titleText: method.method === 'iban' ? language.translate('payment.stripe_sepa_display_name_text') : methodName,
+            },
+            [PaymentMethodId.WorldpayAccess]: {
+                logoUrl: '',
+                titleText: language.translate('payment.credit_debit_card_text'),
+            },
         };
+
+        if (method.id === PaymentMethodId.PaypalCommerceVenmo) {
+            return customTitles[PaymentMethodId.PaypalCommerceAlternativeMethod];
+        }
 
         // KLUDGE: 'paypal' is actually a credit card method. It is the only
         // exception to the rule below. We should probably fix it on API level,

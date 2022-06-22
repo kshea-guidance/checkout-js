@@ -6,7 +6,9 @@ import { CheckoutProvider } from '../checkout';
 import { getStoreConfig } from '../config/config.mock';
 import { createLocaleContext, LocaleContext, LocaleContextType } from '../locale';
 import { Button } from '../ui/button';
+import { IconBolt } from '../ui/icon';
 
+import { PaymentMethodId } from './paymentMethod';
 import PaymentSubmitButton, { PaymentSubmitButtonProps } from './PaymentSubmitButton';
 
 describe('PaymentSubmitButton', () => {
@@ -76,13 +78,15 @@ describe('PaymentSubmitButton', () => {
             .toEqual(languageService.translate('payment.amazonpay_continue_action'));
     });
 
-    it('renders button with special label for Bolt', () => {
+    it('renders button with special label and icon for Bolt', () => {
         const component = mount(
             <PaymentSubmitButtonTest methodId="bolt" />
         );
 
         expect(component.text())
-            .toEqual(languageService.translate('payment.bolt_continue_action'));
+            .toEqual('Bolt' + languageService.translate('payment.place_order_action'));
+        expect(component.find(IconBolt).length)
+            .toEqual(1);
     });
 
     it('renders button with special label for Barclaycard', () => {
@@ -112,6 +116,15 @@ describe('PaymentSubmitButton', () => {
             .toEqual(languageService.translate('payment.chasepay_continue_action'));
     });
 
+    it('renders button with special label for Opy', () => {
+        const component = mount(
+            <PaymentSubmitButtonTest methodId="opy" methodName="Opy" />
+        );
+
+        expect(component.text())
+            .toEqual(languageService.translate('payment.opy_continue_action', { methodName: 'Opy' }));
+    });
+
     it('renders button with special label for PayPal', () => {
         const component = mount(
             <PaymentSubmitButtonTest methodType="paypal" />
@@ -121,12 +134,48 @@ describe('PaymentSubmitButton', () => {
             .toEqual(languageService.translate('payment.paypal_continue_action'));
     });
 
+    it('renders button with special label for BraintreeVenmo', () => {
+        const component = mount(
+            <PaymentSubmitButtonTest methodId={ PaymentMethodId.BraintreeVenmo } methodType="paypal" />
+        );
+
+        expect(component.text())
+            .toEqual(languageService.translate('payment.braintreevenmo_continue_action'));
+    });
+
     it('renders button with special label for PayPal Credit', () => {
         const component = mount(
             <PaymentSubmitButtonTest methodType="paypal-credit" />
         );
 
         expect(component.text())
-            .toEqual(languageService.translate('payment.paypal_credit_continue_action'));
+            .toEqual(languageService.translate('payment.paypal_pay_later_continue_action'));
+    });
+
+    it('renders button with special label for Quadpay', () => {
+        const component = mount(
+            <PaymentSubmitButtonTest methodId="quadpay" />
+        );
+
+        expect(component.text())
+            .toEqual(languageService.translate('payment.quadpay_continue_action'));
+    });
+
+    it('renders button with special label for Zip', () => {
+        const component = mount(
+            <PaymentSubmitButtonTest methodId="zip" />
+        );
+
+        expect(component.text())
+            .toEqual(languageService.translate('payment.zip_continue_action'));
+    });
+
+    it('renders button with label of "Continue with ${methodName}"', () => {
+        const component = mount(
+            <PaymentSubmitButtonTest initialisationStrategyType="none" methodName="Foo" />
+        );
+
+        expect(component.text())
+            .toEqual(languageService.translate('payment.ppsdk_continue_action', { methodName: 'Foo' }));
     });
 });

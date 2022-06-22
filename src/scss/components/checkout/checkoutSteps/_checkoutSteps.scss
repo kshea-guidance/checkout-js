@@ -26,6 +26,14 @@
     }
 }
 
+.checkout-view-header {
+    margin-bottom: remCalc(10px);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
 .checkout-view-content {
     @include breakpoint("large") {
         @include collapse;
@@ -163,5 +171,21 @@
 
     .button {
         margin-bottom: 0;
+    }
+}
+
+.checkout-suggestion {
+    margin: 0;
+
+    @include breakpoint("small") {
+        margin-left: remCalc($checkoutStep-counter-size) + $checkoutStep-header-figure-margin;
+    }
+
+    @include breakpoint("large") {
+        margin-left: 0;
+    }
+
+    @include breakpoint(1080px) {
+        margin-left: remCalc($checkoutStep-counter-size) + $checkoutStep-header-figure-margin;
     }
 }

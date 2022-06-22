@@ -3,10 +3,13 @@ import React, { memo, FunctionComponent } from 'react';
 
 import { withCheckout, CheckoutContextProps } from '../../checkout';
 
+import getUniquePaymentMethodId from './getUniquePaymentMethodId';
 import AdyenV2PaymentMethod from './AdyenV2PaymentMethod';
+import AdyenV3PaymentMethod from './AdyenV3PaymentMethod';
 import AffirmPaymentMethod from './AffirmPaymentMethod';
 import AmazonPaymentMethod from './AmazonPaymentMethod';
 import AmazonPayV2PaymentMethod from './AmazonPayV2PaymentMethod';
+import ApplePayPaymentMethod from './ApplePayPaymentMethod';
 import BarclaycardPaymentMethod from './BarclaycardPaymentMethod';
 import BlueSnapV2PaymentMethod from './BlueSnapV2PaymentMethod';
 import BoltPaymentMethod from './BoltPaymentMethod';
@@ -22,7 +25,9 @@ import KlarnaPaymentMethod from './KlarnaPaymentMethod';
 import KlarnaV2PaymentMethod from './KlarnaV2PaymentMethod';
 import MasterpassPaymentMethod from './MasterpassPaymentMethod';
 import MolliePaymentMethod from './MolliePaymentMethod';
+import MonerisPaymentMethod from './MonerisPaymentMethod';
 import OfflinePaymentMethod from './OfflinePaymentMethod';
+import OpyPaymentMethod from './OpyPaymentMethod';
 import PaymentMethodId from './PaymentMethodId';
 import PaymentMethodProviderType from './PaymentMethodProviderType';
 import PaymentMethodType from './PaymentMethodType';
@@ -30,9 +35,12 @@ import PaypalCommerceCreditCardPaymentMethod from './PaypalCommerceCreditCardPay
 import PaypalCommercePaymentMethod from './PaypalCommercePaymentMethod';
 import PaypalExpressPaymentMethod from './PaypalExpressPaymentMethod';
 import PaypalPaymentsProPaymentMethod from './PaypalPaymentsProPaymentMethod';
+import PPSDKPaymentMethod from './PPSDKPaymentMethod';
 import SquarePaymentMethod from './SquarePaymentMethod';
 import StripePaymentMethod from './StripePaymentMethod';
+import StripeUPEPaymentMethod from './StripeUPEPaymentMethod';
 import VisaCheckoutPaymentMethod from './VisaCheckoutPaymentMethod';
+import WorldpayCreditCardPaymentMethod from './WorldpayCreditCardPaymentMethod';
 
 export interface PaymentMethodProps {
     method: PaymentMethod;
@@ -63,8 +71,20 @@ export interface WithCheckoutPaymentMethodProps {
 const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckoutPaymentMethodProps> = props => {
     const { method } = props;
 
+    if (method.type === PaymentMethodProviderType.PPSDK) {
+        return <PPSDKPaymentMethod { ...props } />;
+    }
+
     if (method.gateway === PaymentMethodId.AdyenV2) {
         return <AdyenV2PaymentMethod { ...props } />;
+    }
+
+    if (method.gateway === PaymentMethodId.AdyenV3) {
+        return <AdyenV3PaymentMethod { ...props } />;
+    }
+
+    if (method.id === PaymentMethodId.ApplePay) {
+        return <ApplePayPaymentMethod { ...props } />;
     }
 
     if (method.id === PaymentMethodId.SquareV2) {
@@ -73,6 +93,10 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
 
     if (method.gateway === PaymentMethodId.StripeV3) {
         return <StripePaymentMethod { ...props } />;
+    }
+
+    if (method.gateway === PaymentMethodId.StripeUPE) {
+        return <StripeUPEPaymentMethod { ...props } />;
     }
 
     if (method.id === PaymentMethodId.Amazon) {
@@ -112,7 +136,7 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
     }
 
     if (method.gateway === PaymentMethodId.Checkoutcom) {
-        if (method.id === 'credit_card') {
+        if (method.id === 'credit_card' || method.id === 'card') {
             return <HostedCreditCardPaymentMethod { ...props } />;
         }
 
@@ -134,11 +158,14 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
     }
 
     if (method.id === PaymentMethodId.AdyenV2GooglePay ||
+        method.id === PaymentMethodId.AdyenV3GooglePay ||
         method.id === PaymentMethodId.AuthorizeNetGooglePay ||
         method.id === PaymentMethodId.BraintreeGooglePay ||
         method.id === PaymentMethodId.CheckoutcomGooglePay ||
         method.id === PaymentMethodId.CybersourceV2GooglePay ||
-        method.id === PaymentMethodId.StripeGooglePay) {
+        method.id === PaymentMethodId.OrbitalGooglePay ||
+        method.id === PaymentMethodId.StripeGooglePay ||
+        method.id === PaymentMethodId.StripeUPEGooglePay) {
         return <GooglePayPaymentMethod { ...props } />;
     }
 
@@ -156,8 +183,13 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
 
     if (method.id === PaymentMethodId.PaypalCommerce ||
         method.id === PaymentMethodId.PaypalCommerceCredit ||
+        method.id === PaymentMethodId.PaypalCommerceVenmo ||
         method.gateway === PaymentMethodId.PaypalCommerceAlternativeMethod) {
-        return <PaypalCommercePaymentMethod { ...props } />;
+        return <PaypalCommercePaymentMethod
+            { ...props }
+            isAPM={ method.gateway === PaymentMethodId.PaypalCommerceAlternativeMethod }
+            uniqueId={ getUniquePaymentMethodId(method.id, method.gateway) }
+        />;
     }
 
     if (method.id === PaymentMethodId.PaypalExpress) {
@@ -177,8 +209,20 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
         return <BoltPaymentMethod { ...props } />;
     }
 
+    if (method.id === PaymentMethodId.Moneris) {
+        return <MonerisPaymentMethod { ...props } />;
+    }
+
+    if (method.id === PaymentMethodId.WorldpayAccess) {
+        return <WorldpayCreditCardPaymentMethod { ...props } />;
+    }
+
     if (method.gateway === PaymentMethodId.Afterpay ||
+        method.gateway === PaymentMethodId.Clearpay ||
+        method.id === PaymentMethodId.BraintreeVenmo ||
+        method.id === PaymentMethodId.Humm ||
         method.id === PaymentMethodId.Laybuy ||
+        method.id === PaymentMethodId.Quadpay ||
         method.id === PaymentMethodId.Sezzle ||
         method.id === PaymentMethodId.Zip ||
         method.method === PaymentMethodType.Paypal ||
@@ -189,6 +233,10 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
 
     if (method.type === PaymentMethodProviderType.Offline) {
         return <OfflinePaymentMethod { ...props } />;
+    }
+
+    if (method.id === PaymentMethodId.Opy) {
+        return <OpyPaymentMethod { ...props } />;
     }
 
     if (method.gateway === PaymentMethodId.Mollie) {

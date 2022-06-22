@@ -29,12 +29,22 @@
     flex-basis: 100%;
 }
 
-.form-field--mollie {
-    color: #4496f6 !important;
+.form-field--bolt-embed {
+    flex-basis: 100%;
+    height: remCalc(110px);
+}
 
-    &-ccNumber,
-    &-ccName {
+.form-field--createAccount {
+    height: auto;
+}
+
+.mollie {
+    &-full {
         flex-basis: 100%;
+    }
+
+    &-aside {
+        flex: 1 0 0;
     }
 }
 

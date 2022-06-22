@@ -17,6 +17,7 @@ import ShippingHeader from './ShippingHeader';
 import { SingleShippingFormValues } from './SingleShippingForm';
 
 export interface ShippingProps {
+    isBillingSameAsShipping: boolean;
     cartHasChanged: boolean;
     isMultiShippingMode: boolean;
     onCreateAccount(): void;
@@ -24,7 +25,7 @@ export interface ShippingProps {
     onReady?(): void;
     onUnhandledError(error: Error): void;
     onSignIn(): void;
-    navigateNextStep(billingSameAsShipping: boolean): void;
+    navigateNextStep(isBillingSameAsShipping: boolean): void;
 }
 
 export interface WithCheckoutShippingProps {
@@ -97,6 +98,7 @@ class Shipping extends Component<ShippingProps & WithCheckoutShippingProps, Ship
 
     render(): ReactNode {
         const {
+            isBillingSameAsShipping,
             isGuest,
             shouldShowMultiShipping,
             customer,
@@ -118,7 +120,7 @@ class Shipping extends Component<ShippingProps & WithCheckoutShippingProps, Ship
                 <ShippingHeader
                     isGuest={ isGuest }
                     isMultiShippingMode={ isMultiShippingMode }
-                    onMultiShippingChange={ onToggleMultiShipping }
+                    onMultiShippingChange={ this.handleMultiShippingModeSwitch }
                     shouldShowMultiShipping={ shouldShowMultiShipping }
                 />
 
@@ -131,6 +133,7 @@ class Shipping extends Component<ShippingProps & WithCheckoutShippingProps, Ship
                         addresses={ customer.addresses }
                         deinitialize={ deinitializeShippingMethod }
                         initialize={ initializeShippingMethod }
+                        isBillingSameAsShipping = { isBillingSameAsShipping }
                         isGuest={ isGuest }
                         isMultiShippingMode={ isMultiShippingMode }
                         onMultiShippingSubmit={ this.handleMultiShippingSubmit }
@@ -143,6 +146,31 @@ class Shipping extends Component<ShippingProps & WithCheckoutShippingProps, Ship
             </div>
         );
     }
+
+    private handleMultiShippingModeSwitch: () => void = async () => {
+        const {
+            consignments,
+            isMultiShippingMode,
+            onToggleMultiShipping = noop,
+            onUnhandledError = noop,
+            updateShippingAddress,
+        } = this.props;
+
+        if (isMultiShippingMode && consignments.length > 1) {
+            this.setState({ isInitializing: true });
+
+            try {
+                // Collapse all consignments into one
+                await updateShippingAddress(consignments[0].shippingAddress);
+            } catch (error) {
+                onUnhandledError(error);
+            } finally {
+                this.setState({ isInitializing: false });
+            }
+        }
+
+        onToggleMultiShipping();
+    };
 
     private handleSingleShippingSubmit: (values: SingleShippingFormValues) => void = async ({
         billingSameAsShipping,
@@ -201,7 +229,7 @@ class Shipping extends Component<ShippingProps & WithCheckoutShippingProps, Ship
 
         try {
             await unassignItem({
-                shippingAddress: address,
+                address,
                 lineItems: [{
                     quantity: 1,
                     itemId,

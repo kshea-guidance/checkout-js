@@ -238,6 +238,7 @@ describe('PaymentForm', () => {
                 ccName: 'Foo Bar',
                 ccExpiry: '10 / 22',
                 paymentProviderRadio: defaultProps.defaultMethodId,
+                shouldCreateAccount: true,
                 shouldSaveInstrument: false,
                 terms: false,
             });
@@ -323,6 +324,7 @@ describe('PaymentForm', () => {
                     methodGateway: 'baz',
                     methodId: 'foo',
                     methodType: 'bar',
+                    methodName: 'Authorizenet',
                 }));
         });
 
@@ -340,6 +342,7 @@ describe('PaymentForm', () => {
                     methodGateway: 'baz',
                     methodId: undefined,
                     methodType: 'bar',
+                    methodName: 'Amazon Pay',
                 }));
         });
 
@@ -357,6 +360,7 @@ describe('PaymentForm', () => {
                     methodGateway: 'baz',
                     methodId: 'amazonpay',
                     methodType: 'bar',
+                    methodName: 'Amazon Pay',
                 }));
         });
     });

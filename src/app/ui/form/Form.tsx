@@ -32,7 +32,12 @@ const Form: FunctionComponent<FormProps> = ({
         const erroredFormField = current.querySelector<HTMLElement>(errorInputSelectors.join(', '));
 
         if (erroredFormField) {
-            erroredFormField.focus();
+            erroredFormField.focus({preventScroll: true});
+            try {
+                erroredFormField.offsetParent?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center'});
+            } catch {
+                erroredFormField.offsetParent?.scrollIntoView();
+            }
         }
     };
 
